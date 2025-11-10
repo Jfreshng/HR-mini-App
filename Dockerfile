@@ -114,17 +114,20 @@ RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local
 
 WORKDIR /var/www/html
 
-# Copy and install dependencies
+# Copy composer files first
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
-# Copy application
+# Install dependencies with error handling
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress || \
+    composer update --no-dev --optimize-autoloader --no-interaction --no-progress
+
+# Copy the rest of the application
 COPY . .
 
-# Create .env with encryption key
+# Create minimal .env
 RUN echo "CI_ENVIRONMENT = production" > .env
 RUN echo "app.baseURL = 'https://hr-mini-app-kd2x.onrender.com'" >> .env
-RUN echo "encryption.key = $(openssl rand -base64 32)" >> .env
+RUN openssl rand -base64 32 | tr -d '\n' | xargs -0 -I {} echo "encryption.key = {}" >> .env
 
 # Fix permissions
 RUN chmod -R 777 writable/
@@ -132,7 +135,7 @@ RUN chmod -R 777 writable/
 # Enable Apache rewrite
 RUN a2enmod rewrite
 
-# Apache config
+# Apache config for Render
 COPY ./apache-config.conf /etc/apache2/sites-available/000-default.conf
 RUN echo "Listen 10000" > /etc/apache2/ports.conf
 

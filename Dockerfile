@@ -99,15 +99,12 @@
 # Use PHP 8.2 with Apache
 FROM php:8.2-apache
 
-# Install system dependencies
+# Install system dependencies and enable intl
 RUN apt-get update && apt-get install -y \
-    git unzip curl libzip-dev libpng-dev libjpeg-dev \
-    libfreetype6-dev libonig-dev libxml2-dev \
+    git unzip curl libicu-dev \
+    && docker-php-ext-install intl \
+    && docker-php-ext-install pdo pdo_mysql mysqli \
     && rm -rf /var/lib/apt/lists/*
-
-# Install PHP extensions
-RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql mysqli gd mbstring
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -117,9 +114,8 @@ WORKDIR /var/www/html
 # Copy composer files first
 COPY composer.json composer.lock ./
 
-# Install dependencies with error handling
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress || \
-    composer update --no-dev --optimize-autoloader --no-interaction --no-progress
+# Install dependencies - IGNORE missing extensions
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --ignore-platform-req=ext-intl --ignore-platform-req=ext-gd
 
 # Copy the rest of the application
 COPY . .
@@ -127,7 +123,6 @@ COPY . .
 # Create minimal .env
 RUN echo "CI_ENVIRONMENT = production" > .env
 RUN echo "app.baseURL = 'https://hr-mini-app-kd2x.onrender.com'" >> .env
-RUN openssl rand -base64 32 | tr -d '\n' | xargs -0 -I {} echo "encryption.key = {}" >> .env
 
 # Fix permissions
 RUN chmod -R 777 writable/

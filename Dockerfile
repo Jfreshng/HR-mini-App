@@ -1,34 +1,21 @@
-# Use official PHP image with Apache
+# Use PHP with Apache
 FROM php:8.2-apache
 
-# Install required PHP extensions
-RUN apt-get update && apt-get install -y \
-    libicu-dev \
-    libonig-dev \
-    libzip-dev \
-    unzip \
-    && docker-php-ext-install intl mbstring mysqli pdo pdo_mysql zip
+# Install required extensions
+RUN docker-php-ext-install pdo pdo_mysql mysqli
 
-# Enable Apache rewrite module
+# Copy your app into the Apache web root
+COPY . /var/www/html/
+
+# Ensure writable folder permissions
+RUN chmod -R 777 /var/www/html/writable
+
+# Enable Apache rewrite (needed for CodeIgniter routes)
 RUN a2enmod rewrite
+COPY ./apache-config.conf /etc/apache2/sites-available/000-default.conf
 
-# Set working directory
-WORKDIR /var/www/html
+# Expose Render's expected port
+EXPOSE 10000
 
-# Copy project files
-COPY . .
-
-# Copy Apache config (optional)
-# COPY ./000-default.conf /etc/apache2/sites-available/000-default.conf
-
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
-
-# Expose port
-EXPOSE 8080
-
-# Start Apache in foreground
-CMD ["apache2-foreground"]
+# Run Apache on the right port
+CMD ["apache2ctl", "-D", "FOREGROUND"]

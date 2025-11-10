@@ -1,21 +1,26 @@
 # Use PHP with Apache
 FROM php:8.2-apache
 
-# Install required extensions
+# Install PHP extensions
 RUN docker-php-ext-install pdo pdo_mysql mysqli
 
-# Copy your app into the Apache web root
+# Copy the app into the container
 COPY . /var/www/html/
 
-# Ensure writable folder permissions
+# Set permissions for writable directory
 RUN chmod -R 777 /var/www/html/writable
 
-# Enable Apache rewrite (needed for CodeIgniter routes)
+# Enable Apache rewrite module
 RUN a2enmod rewrite
+
+# Set the working directory to the public folder
+WORKDIR /var/www/html/public
+
+# Update Apache configuration
 COPY ./apache-config.conf /etc/apache2/sites-available/000-default.conf
 
-# Expose Render's expected port
+# Expose Render’s required port
 EXPOSE 10000
 
-# Run Apache on the right port
+# Start Apache on the correct port
 CMD ["apache2ctl", "-D", "FOREGROUND"]

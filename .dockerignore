@@ -1,0 +1,19 @@
+# Node, Composer or other dependency caches
+node_modules
+vendor
+
+# CI writable directories
+writable/*
+!writable/.gitkeep
+
+# Local environment config
+.env
+
+# IDE/editor files
+.vscode
+.idea
+*.log
+
+# Git metadata
+.git
+.gitignore

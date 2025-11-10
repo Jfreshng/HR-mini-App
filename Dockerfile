@@ -96,19 +96,18 @@
 # # --------------------------
 # CMD ["apache2ctl", "-D", "FOREGROUND"]
 
-
 # Use PHP 8.2 with Apache
 FROM php:8.2-apache
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     git unzip curl libzip-dev libpng-dev libjpeg-dev \
-    libfreetype6-dev libonig-dev libxml2-dev libicu-dev \
+    libfreetype6-dev libonig-dev libxml2-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_mysql mysqli zip gd mbstring exif intl
+    && docker-php-ext-install pdo pdo_mysql mysqli gd mbstring
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
@@ -122,14 +121,13 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progre
 # Copy application
 COPY . .
 
-# Create .env if missing
-RUN if [ ! -f ".env" ]; then \
-    echo "CI_ENVIRONMENT = production" > .env; \
-    echo "app.baseURL = 'https://hr-mini-app-kd2x.onrender.com'" >> .env; \
-    fi
+# Create .env with encryption key
+RUN echo "CI_ENVIRONMENT = production" > .env
+RUN echo "app.baseURL = 'https://hr-mini-app-kd2x.onrender.com'" >> .env
+RUN echo "encryption.key = $(openssl rand -base64 32)" >> .env
 
 # Fix permissions
-RUN chown -R www-data:www-data /var/www/html/ && chmod -R 777 writable/
+RUN chmod -R 777 writable/
 
 # Enable Apache rewrite
 RUN a2enmod rewrite
@@ -141,11 +139,6 @@ RUN echo "Listen 10000" > /etc/apache2/ports.conf
 # Enable PHP errors
 RUN echo "display_errors = On" >> /usr/local/etc/php/php.ini
 RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/php.ini
-
-# TEST FILES - REMOVE THESE AFTER DEBUGGING
-RUN echo "<?php echo 'TEST 1: Basic PHP works!'; ?>" > /var/www/html/public/test1.php
-RUN echo "<?php phpinfo(); ?>" > /var/www/html/public/test2.php
-RUN echo "<?php require_once '../vendor/autoload.php'; echo 'Autoload OK!'; ?>" > /var/www/html/public/test3.php
 
 WORKDIR /var/www/html/public
 EXPOSE 10000

@@ -31,6 +31,10 @@ $routes->get('api/test-db', 'Api\TestDb::index');
 //     });
 // });
 
+$routes->get('test-route', function() {
+    return "Routing works!";
+});
+
 $routes->group('api', ['namespace' => 'App\Controllers\Api'], function($routes) {
     // Public routes
     $routes->post('register', 'Auth::register');

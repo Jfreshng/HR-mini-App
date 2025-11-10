@@ -79,6 +79,13 @@ WORKDIR /var/www/html/public
 EXPOSE 10000
 
 # --------------------------
+# Enable PHP error reporting for debugging
+# --------------------------
+RUN echo "display_errors = On" >> /usr/local/etc/php/php.ini
+RUN echo "error_reporting = E_ALL" >> /usr/local/etc/php/php.ini
+RUN echo "log_errors = On" >> /usr/local/etc/php/php.ini
+
+# --------------------------
 # Start Apache
 # --------------------------
 CMD ["apache2ctl", "-D", "FOREGROUND"]
